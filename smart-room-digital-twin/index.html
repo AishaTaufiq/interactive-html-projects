@@ -1,1 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Room · Digital Twin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f4f0eb;
+  --surface:   #fffcf8;
+  --card:      rgba(255,252,248,0.92);
+  --border:    rgba(180,165,145,0.2);
+  --shadow:    0 4px 28px rgba(140,120,95,0.10);
+  --shadow-lg: 0 12px 48px rgba(140,120,95,0.16);
+  --text:      #2d2820;
+  --text-2:    #7a6e62;
+  --text-3:    #b0a496;
+  --teal:      #4eb8a0;
+  --teal-l:    #d0f0e8;
+  --amber:     #e8a44a;
+  --amber-l:   #fdefd4;
+  --rose:      #e07070;
+  --rose-l:    #fde0d8;
+  --sky:       #6aaed6;
+  --sky-l:     #d8edf8;
+  --sage:      #8ab89a;
+  --sage-l:    #ddf0e4;
+  --lavender:  #9d8ec8;
+  --lav-l:     #ece8f8;
+  --radius:    20px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+
+  /* room */
+  --room-wall: #f9e8d8;
+  --room-floor: #e8d4b8;
+  --room-light: rgba(255,230,140,0.0);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+
+body {
+  font-family: 'Karla', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ─────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── HEADER ────────────────────────────── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top:0; z-index:100;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 20px rgba(140,120,95,0.07);
+}
+.header-logo {
+  display: flex; align-items: center; gap: 12px;
+}
+.header-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--teal), var(--sky));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 14px rgba(78,184,160,0.35);
+}
+.header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.header h1 span { color: var(--teal); }
+.header-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px rgba(78,184,160,0.25);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 3px rgba(78,184,160,0.25); }
+  50%      { box-shadow: 0 0 0 6px rgba(78,184,160,0.10); }
+}
+.header-time { font-weight: 600; color: var(--text); }
+
+/* ── MAIN GRID ─────────────────────────── */
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+  display: grid;
+  grid-template-columns: 340px 1fr 300px;
+  grid-template-rows: auto auto auto;
+  gap: 18px;
+}
+
+/* ── CARD BASE ─────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  transition: box-shadow .25s;
+}
+.card:hover { box-shadow: var(--shadow-lg); }
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 7px;
+}
+.card-title .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── STAT CARDS ROW ────────────────────── */
+.stats-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-card::before {
+  content: '';
+  position: absolute; top:0; left:0; right:0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg,var(--rose),var(--amber)); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg,var(--sky),var(--teal)); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg,var(--amber),var(--sage)); }
+.stat-card:nth-child(4)::before { background: linear-gradient(90deg,var(--lavender),var(--sky)); }
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-unit { font-size: 0.9rem; font-weight: 500; opacity: .6; margin-left: 2px; }
+.stat-sub { font-size: 0.75rem; color: var(--text-3); margin-top: 4px; }
+.stat-icon {
+  position: absolute; top: 18px; right: 18px;
+  font-size: 1.6rem; opacity: .15;
+}
+
+/* ── CONTROLS PANEL ────────────────────── */
+.controls-panel {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* slider group */
+.slider-group { margin-bottom: 4px; }
+.slider-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.slider-name { font-size: 0.85rem; font-weight: 500; }
+.slider-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%; height: 6px;
+  border-radius: 3px;
+  outline: none; cursor: pointer;
+  background: #e8e0d4;
+  transition: background .3s;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+#tempSlider { background: linear-gradient(90deg,#b8e4f8,#ffd4a0,#ffb0a0); }
+#tempSlider::-webkit-slider-thumb { background: var(--amber); }
+#humSlider { background: linear-gradient(90deg,#f0e8d8,#b8d8f0); }
+#humSlider::-webkit-slider-thumb { background: var(--sky); }
+
+/* toggle switches */
+.toggles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.toggle-btn {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 16px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all .22s;
+  position: relative; overflow: hidden;
+  user-select: none;
+}
+.toggle-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .22s;
+}
+.toggle-btn:hover::before { opacity: .05; }
+.toggle-btn.on {
+  border-color: transparent;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.1);
+}
+.toggle-btn .toggle-icon { font-size: 1.5rem; }
+.toggle-btn .toggle-label { font-size: 0.72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.toggle-btn .toggle-state { font-size: 0.65rem; font-weight: 700; letter-spacing: .1em; }
+
+.toggle-fan.on   { background: var(--teal-l); border-color: var(--teal); color: var(--teal); }
+.toggle-light.on { background: var(--amber-l); border-color: var(--amber); color: var(--amber); }
+.toggle-window.on{ background: var(--sky-l); border-color: var(--sky); color: var(--sky); }
+.toggle-ac.on    { background: var(--lav-l); border-color: var(--lavender); color: var(--lavender); }
+
+.fan-icon-wrap { display:inline-block; }
+.fan-spin { animation: spin 1s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* ── ROOM ILLUSTRATION ─────────────────── */
+.room-panel {
+  grid-column: 2;
+  grid-row: 2;
+}
+.room-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 62%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--room-wall);
+  transition: background 0.8s ease;
+}
+.room-inner { position: absolute; inset: 0; }
+
+/* room SVG */
+#roomSvg { width:100%; height:100%; display:block; }
+
+/* light glow overlay */
+.room-glow {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 5%, rgba(255,220,100,0.55) 0%, rgba(255,200,80,0.15) 50%, transparent 80%);
+  transition: opacity 0.6s ease;
+}
+.room-glow.on { opacity: 1; }
+
+/* ── CHARTS PANEL ──────────────────────── */
+.charts-panel {
+  grid-column: 2;
+  grid-row: 3;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+.mini-chart-wrap { position: relative; height: 90px; }
+.chart-label { font-size: 0.7rem; color: var(--text-3); margin-bottom: 4px; font-weight: 500; }
+
+/* ── RIGHT PANEL ───────────────────────── */
+.right-panel {
+  grid-column: 3;
+  grid-row: 2 / 4;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* system log */
+.log-list {
+  display: flex; flex-direction: column; gap: 7px;
+  max-height: 200px; overflow-y: auto;
+}
+.log-entry {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 0.76rem; line-height: 1.4;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: var(--radius-xs);
+  animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.log-dot { width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0; }
+.log-time { color: var(--text-3); font-size: 0.68rem; white-space:nowrap; }
+.log-msg  { color: var(--text-2); }
+
+/* info panel */
+.info-accordion { display: flex; flex-direction: column; gap: 6px; }
+.info-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.info-header {
+  padding: 11px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface);
+  transition: background .2s;
+  user-select: none;
+}
+.info-header:hover { background: var(--bg); }
+.info-header .chevron { transition: transform .25s; font-size: 0.7rem; color: var(--text-3); }
+.info-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height .35s ease, padding .25s;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--text-2);
+  background: var(--surface);
+  padding: 0 14px;
+}
+.info-body.open { max-height: 200px; padding: 10px 14px 14px; }
+.info-header.open .chevron { transform: rotate(180deg); }
+.info-body strong { color: var(--teal); }
+
+/* energy gauge */
+.gauge-wrap {
+  position: relative;
+  width: 130px; height: 70px;
+  margin: 4px auto 0;
+  overflow: hidden;
+}
+.gauge-svg { width: 100%; height: 100%; }
+.gauge-value {
+  text-align: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: -4px;
+}
+.gauge-sub { text-align: center; font-size: 0.7rem; color: var(--text-3); margin-top: 2px; }
+
+/* responsive */
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 300px 1fr; grid-template-rows: auto auto auto auto; }
+  .right-panel { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; }
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 720px) {
+  .main { grid-template-columns: 1fr; padding: 12px; }
+  .controls-panel,.room-panel,.charts-panel,.right-panel { grid-column: 1; grid-row: auto; }
+  .right-panel { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .header { padding: 12px 16px; }
+  .toggles-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">
+    <div class="header-icon">🏠</div>
+    <h1>Smart Room <span>Digital Twin</span></h1>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span>Live Sync</span>
+    <span class="header-time" id="clock">--:--:--</span>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">🌡️</div>
+      <div class="stat-label">Temperature</div>
+      <div class="stat-value" id="statTemp">22<span class="stat-unit">°C</span></div>
+      <div class="stat-sub" id="statTempSub">Comfortable range</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💧</div>
+      <div class="stat-label">Humidity</div>
+      <div class="stat-value" id="statHum">55<span class="stat-unit">%</span></div>
+      <div class="stat-sub" id="statHumSub">Optimal level</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-label">Energy Usage</div>
+      <div class="stat-value" id="statEnergy">0.4<span class="stat-unit">kW</span></div>
+      <div class="stat-sub" id="statEnergySub">Low consumption</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">System Status</div>
+      <div class="stat-value" style="font-size:1.1rem;padding-top:6px;" id="statStatus">All Normal</div>
+      <div class="stat-sub" id="statStatusSub">4 sensors active</div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-panel">
+
+    <!-- Sliders -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--rose)"></span>Environmental Controls</div>
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">🌡️ Temperature</span>
+          <span class="slider-val" id="tempLabel" style="color:var(--amber)">22°C</span>
+        </div>
+        <input type="range" id="tempSlider" min="10" max="40" value="22">
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:0.65rem;color:var(--text-3)">10°C Cold</span>
+          <span style="font-size:0.65rem;color:var(--text-3)">40°C Hot</span>
+        </div>
+      </div>
+      <div class="slider-group" style="margin-top:18px">
+        <div class="slider-header">
+          <span class="slider-name">💧 Humidity</span>
+          <span class="slider-val" id="humLabel" style="color:var(--sky)">55%</span>
+        </div>
+        <input type="range" id="humSlider" min="0" max="100" value="55">
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:0.65rem;color:var(--text-3)">0% Dry</span>
+          <span style="font-size:0.65rem;color:var(--text-3)">100% Wet</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--teal)"></span>Device Controls</div>
+      <div class="toggles-grid">
+        <div class="toggle-btn toggle-fan" id="btnFan" onclick="toggleDevice('fan')">
+          <div class="fan-icon-wrap"><span class="toggle-icon" id="fanIcon">🌀</span></div>
+          <span class="toggle-label">Fan</span>
+          <span class="toggle-state" id="fanState">OFF</span>
+        </div>
+        <div class="toggle-btn toggle-light" id="btnLight" onclick="toggleDevice('light')">
+          <span class="toggle-icon" id="lightIcon">💡</span>
+          <span class="toggle-label">Light</span>
+          <span class="toggle-state" id="lightState">OFF</span>
+        </div>
+        <div class="toggle-btn toggle-window" id="btnWindow" onclick="toggleDevice('window')">
+          <span class="toggle-icon" id="windowIcon">🪟</span>
+          <span class="toggle-label">Window</span>
+          <span class="toggle-state" id="windowState">CLOSED</span>
+        </div>
+        <div class="toggle-btn toggle-ac" id="btnAc" onclick="toggleDevice('ac')">
+          <span class="toggle-icon">❄️</span>
+          <span class="toggle-label">A/C</span>
+          <span class="toggle-state" id="acState">OFF</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gauge -->
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center"><span class="dot" style="background:var(--amber)"></span>Energy Gauge</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#6aaed6"/>
+              <stop offset="50%" stop-color="#e8a44a"/>
+              <stop offset="100%" stop-color="#e07070"/>
+            </linearGradient>
+          </defs>
+          <!-- track -->
+          <path d="M 10 65 A 55 55 0 0 1 120 65" fill="none" stroke="#e8e0d4" stroke-width="10" stroke-linecap="round"/>
+          <!-- fill -->
+          <path id="gaugeFill" d="M 10 65 A 55 55 0 0 1 120 65" fill="none" stroke="url(#gaugeGrad)" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="172" stroke-dashoffset="155"/>
+          <!-- needle -->
+          <line id="gaugeNeedle" x1="65" y1="65" x2="65" y2="18" stroke="#2d2820" stroke-width="2" stroke-linecap="round"
+                style="transform-origin:65px 65px; transform:rotate(-80deg); transition:transform 0.5s ease"/>
+          <circle cx="65" cy="65" r="5" fill="#2d2820"/>
+        </svg>
+      </div>
+      <div class="gauge-value" id="gaugeVal">0.4 <span style="font-size:.75rem;font-weight:500;opacity:.5">kW</span></div>
+      <div class="gauge-sub" id="gaugeSub">Low — Efficient</div>
+    </div>
+
+  </div>
+
+  <!-- ROOM ILLUSTRATION -->
+  <div class="room-panel card" style="padding:14px">
+    <div class="card-title"><span class="dot" style="background:var(--sage)"></span>Room Visualization · Live Twin</div>
+    <div class="room-container" id="roomContainer">
+      <div class="room-inner">
+        <svg id="roomSvg" viewBox="0 0 600 370" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop id="wallTop" offset="0%" stop-color="#f9e8d8"/>
+              <stop id="wallBot" offset="100%" stop-color="#f0d8c2"/>
+            </linearGradient>
+            <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d8c4a4"/>
+              <stop offset="100%" stop-color="#c8b490"/>
+            </linearGradient>
+            <radialGradient id="lightGlow" cx="50%" cy="5%" r="55%">
+              <stop offset="0%" stop-color="rgba(255,220,100,0.55)"/>
+              <stop offset="70%" stop-color="rgba(255,210,80,0.1)"/>
+              <stop offset="100%" stop-color="rgba(255,200,80,0)"/>
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="softglow">
+              <feGaussianBlur stdDeviation="6" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- BACK WALL -->
+          <rect x="0" y="0" width="600" height="370" fill="url(#wallGrad)"/>
+
+          <!-- LIGHT GLOW OVERLAY -->
+          <rect id="lightGlowRect" x="0" y="0" width="600" height="370" fill="url(#lightGlow)" opacity="0" style="transition:opacity 0.6s"/>
+
+          <!-- FLOOR -->
+          <polygon points="0,260 600,260 600,370 0,370" fill="url(#floorGrad)"/>
+          <!-- floor boards -->
+          <line x1="0" y1="280" x2="600" y2="280" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+          <line x1="0" y1="300" x2="600" y2="300" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+          <line x1="0" y1="320" x2="600" y2="320" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+          <line x1="0" y1="340" x2="600" y2="340" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+          <line x1="100" y1="260" x2="100" y2="370" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+          <line x1="200" y1="260" x2="200" y2="370" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+          <line x1="300" y1="260" x2="300" y2="370" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+          <line x1="400" y1="260" x2="400" y2="370" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+          <line x1="500" y1="260" x2="500" y2="370" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+
+          <!-- WALL TRIM -->
+          <rect x="0" y="255" width="600" height="8" fill="rgba(180,150,110,0.3)" rx="2"/>
+
+          <!-- WINDOW GROUP -->
+          <g id="windowGroup">
+            <!-- window frame -->
+            <rect x="60" y="40" width="150" height="120" rx="4" fill="rgba(180,210,240,0.3)" stroke="#c8b898" stroke-width="3"/>
+            <!-- window glass (closed) -->
+            <rect id="windowGlass" x="63" y="43" width="144" height="114" rx="2" fill="rgba(180,220,255,0.35)" style="transition:fill 0.4s"/>
+            <!-- window panes -->
+            <line x1="135" y1="43" x2="135" y2="157" stroke="rgba(180,160,130,0.5)" stroke-width="2"/>
+            <line x1="63" y1="100" x2="207" y2="100" stroke="rgba(180,160,130,0.5)" stroke-width="2"/>
+            <!-- window open indicator -->
+            <rect id="windowOpen1" x="63" y="43" width="70" height="114" rx="2" fill="rgba(130,190,240,0.15)" stroke="rgba(100,170,220,0.4)" stroke-width="1" opacity="0" style="transition:opacity 0.4s"/>
+            <!-- sky outside -->
+            <rect id="windowSky" x="64" y="44" width="142" height="112" rx="1" fill="rgba(135,200,255,0.18)"/>
+            <!-- window label -->
+            <text x="135" y="175" text-anchor="middle" font-family="Karla,sans-serif" font-size="10" fill="rgba(120,100,80,0.6)" id="windowLabel">CLOSED</text>
+            <!-- breeze lines (visible when open) -->
+            <g id="breezeLines" opacity="0" style="transition:opacity 0.5s">
+              <line x1="230" y1="90" x2="280" y2="90" stroke="rgba(100,180,240,0.6)" stroke-width="2" stroke-dasharray="6,4">
+                <animate attributeName="stroke-dashoffset" values="0;-20" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="230" y1="105" x2="270" y2="105" stroke="rgba(100,180,240,0.5)" stroke-width="1.5" stroke-dasharray="5,4">
+                <animate attributeName="stroke-dashoffset" values="0;-18" dur="1.8s" repeatCount="indefinite"/>
+              </line>
+              <line x1="230" y1="120" x2="260" y2="120" stroke="rgba(100,180,240,0.4)" stroke-width="1" stroke-dasharray="4,4">
+                <animate attributeName="stroke-dashoffset" values="0;-16" dur="2s" repeatCount="indefinite"/>
+              </line>
+            </g>
+          </g>
+
+          <!-- LIGHT FIXTURE -->
+          <g id="lightFixture">
+            <!-- cord -->
+            <line x1="300" y1="0" x2="300" y2="25" stroke="#c8b898" stroke-width="2.5"/>
+            <!-- bulb housing -->
+            <rect x="268" y="25" width="64" height="12" rx="6" fill="#c8b898"/>
+            <!-- bulb -->
+            <ellipse id="bulbOuter" cx="300" cy="50" rx="18" ry="22" fill="#e8e0d0" stroke="#c8b898" stroke-width="1.5"/>
+            <ellipse id="bulbGlow" cx="300" cy="46" rx="12" ry="14" fill="rgba(255,220,100,0)" style="transition:fill 0.5s"/>
+            <!-- filament -->
+            <path id="filament" d="M 294 42 Q 300 50 306 42" fill="none" stroke="rgba(180,140,60,0.4)" stroke-width="1.5"/>
+            <!-- light rays -->
+            <g id="lightRays" opacity="0" style="transition:opacity 0.6s">
+              <line x1="300" y1="75" x2="300" y2="110" stroke="rgba(255,220,100,0.3)" stroke-width="20" stroke-linecap="round"/>
+              <line x1="280" y1="68" x2="250" y2="90" stroke="rgba(255,220,100,0.2)" stroke-width="12" stroke-linecap="round"/>
+              <line x1="320" y1="68" x2="350" y2="90" stroke="rgba(255,220,100,0.2)" stroke-width="12" stroke-linecap="round"/>
+            </g>
+          </g>
+
+          <!-- FAN -->
+          <g id="fanGroup" style="transform-origin:480px 60px">
+            <!-- motor housing -->
+            <circle cx="480" cy="60" r="14" fill="#d8d0c4" stroke="#c0b8a8" stroke-width="2"/>
+            <!-- blades - SVG animate -->
+            <g id="fanBlades" style="transform-origin:480px 60px">
+              <ellipse cx="480" cy="32" rx="8" ry="18" fill="#c8c0b0" stroke="#b8b0a0" stroke-width="1" rx="4" transform="rotate(0, 480, 60)"/>
+              <ellipse cx="480" cy="32" rx="8" ry="18" fill="#c8c0b0" stroke="#b8b0a0" stroke-width="1" rx="4" transform="rotate(90, 480, 60)"/>
+              <ellipse cx="480" cy="32" rx="8" ry="18" fill="#c8c0b0" stroke="#b8b0a0" stroke-width="1" rx="4" transform="rotate(180, 480, 60)"/>
+              <ellipse cx="480" cy="32" rx="8" ry="18" fill="#c8c0b0" stroke="#b8b0a0" stroke-width="1" rx="4" transform="rotate(270, 480, 60)"/>
+            </g>
+            <circle cx="480" cy="60" r="7" fill="#b8b0a0" stroke="#a8a098" stroke-width="1.5"/>
+            <!-- mount -->
+            <line x1="480" y1="0" x2="480" y2="46" stroke="#c0b8a8" stroke-width="3"/>
+            <!-- label -->
+            <text x="480" y="92" text-anchor="middle" font-family="Karla,sans-serif" font-size="10" fill="rgba(120,100,80,0.6)">FAN</text>
+          </g>
+
+          <!-- THERMOMETER on wall -->
+          <g transform="translate(540, 80)">
+            <rect x="-6" y="-30" width="12" height="50" rx="6" fill="#e8e0d0" stroke="#c8b898" stroke-width="1.5"/>
+            <rect id="thermFill" x="-3" y="10" width="6" height="0" rx="3" fill="#e07070" style="transition:height 0.8s ease, y 0.8s ease"/>
+            <circle cx="0" cy="24" r="8" fill="#e07070"/>
+            <text x="0" y="-38" text-anchor="middle" font-family="Karla,sans-serif" font-size="9" fill="rgba(120,100,80,0.7)">°C</text>
+          </g>
+
+          <!-- DESK & ITEMS -->
+          <g>
+            <!-- desk surface -->
+            <rect x="340" y="195" width="240" height="12" rx="3" fill="#c8a878" stroke="#b09060" stroke-width="1"/>
+            <!-- desk legs -->
+            <rect x="350" y="207" width="10" height="55" rx="2" fill="#b09060"/>
+            <rect x="560" y="207" width="10" height="55" rx="2" fill="#b09060"/>
+            <!-- monitor -->
+            <rect x="400" y="140" width="90" height="58" rx="4" fill="#2d2820" stroke="#4a4240" stroke-width="1.5"/>
+            <rect id="monitorScreen" x="403" y="143" width="84" height="52" rx="2" fill="#1a1a2e"/>
+            <!-- monitor stand -->
+            <rect x="438" y="198" width="14" height="10" rx="1" fill="#3a3530"/>
+            <rect x="430" y="206" width="30" height="4" rx="2" fill="#3a3530"/>
+            <!-- keyboard -->
+            <rect x="390" y="200" width="100" height="16" rx="3" fill="#d8d0c0" stroke="#c0b8a8" stroke-width="1"/>
+            <!-- monitor glow when light on -->
+            <rect id="monitorGlow" x="404" y="144" width="82" height="50" rx="2" fill="#4a90d9" opacity="0.7" style="transition:opacity 0.5s"/>
+            <!-- screen lines -->
+            <g id="screenContent" opacity="0.8">
+              <rect x="408" y="150" width="40" height="4" rx="2" fill="#6ab4f0"/>
+              <rect x="408" y="158" width="60" height="3" rx="1.5" fill="#4a90d9" opacity="0.7"/>
+              <rect x="408" y="164" width="50" height="3" rx="1.5" fill="#4a90d9" opacity="0.5"/>
+              <rect x="408" y="170" width="55" height="3" rx="1.5" fill="#6ab4f0" opacity="0.4"/>
+              <rect x="408" y="178" width="35" height="3" rx="1.5" fill="#90c8f8" opacity="0.3"/>
+            </g>
+            <!-- coffee mug -->
+            <ellipse cx="370" cy="197" rx="12" ry="5" fill="#e8d4b8"/>
+            <path d="M 358 192 Q 358 197 370 197 Q 382 197 382 192 Q 382 178 370 176 Q 358 178 358 192" fill="#d4b890" stroke="#c0a070" stroke-width="1"/>
+            <path d="M 382 187 Q 390 187 390 192 Q 390 197 382 195" fill="none" stroke="#c0a070" stroke-width="1.5"/>
+          </g>
+
+          <!-- SOFA -->
+          <g>
+            <rect x="30" y="200" width="220" height="62" rx="12" fill="#d4b8c4" stroke="#c4a8b4" stroke-width="1.5"/>
+            <rect x="30" y="200" width="220" height="22" rx="10" fill="#e0ccd8" stroke="#c4a8b4" stroke-width="1"/>
+            <!-- cushions -->
+            <rect x="38" y="222" width="95" height="35" rx="8" fill="#ddc8d4" stroke="#c4a8b4" stroke-width="1"/>
+            <rect x="142" y="222" width="95" height="35" rx="8" fill="#ddc8d4" stroke="#c4a8b4" stroke-width="1"/>
+            <!-- sofa arms -->
+            <rect x="18" y="208" width="18" height="48" rx="9" fill="#c4a8b4" stroke="#b498a4" stroke-width="1"/>
+            <rect x="564" y="208" width="18" height="48" rx="9" fill="#c4a8b4" stroke="#b498a4" stroke-width="1" x2="564"/>
+          </g>
+
+          <!-- PLANT -->
+          <g transform="translate(530, 200)">
+            <rect x="-10" y="30" width="20" height="28" rx="5" fill="#c4a878" stroke="#b09060" stroke-width="1"/>
+            <ellipse cx="0" cy="28" rx="4" ry="6" fill="#8ab89a"/>
+            <ellipse cx="-12" cy="18" rx="14" ry="10" fill="#7ab088" transform="rotate(-20,0,20)"/>
+            <ellipse cx="12" cy="18" rx="14" ry="10" fill="#8ab89a" transform="rotate(20,0,20)"/>
+            <ellipse cx="0" cy="8" rx="14" ry="12" fill="#9ac8a8"/>
+          </g>
+
+          <!-- TEMP indicator overlay -->
+          <text id="tempOverlay" x="540" y="175" text-anchor="middle" font-family="Syne,sans-serif" font-size="13" font-weight="700" fill="rgba(120,80,40,0.55)">22°C</text>
+        </svg>
+        <div class="room-glow" id="roomGlow"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-panel card">
+    <div class="card-title"><span class="dot" style="background:var(--lavender)"></span>Live Sensor Data</div>
+    <div class="charts-grid">
+      <div>
+        <div class="chart-label">🌡️ Temperature (°C)</div>
+        <div class="mini-chart-wrap"><canvas id="tempChart"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-label">💧 Humidity (%)</div>
+        <div class="mini-chart-wrap"><canvas id="humChart"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-label">⚡ Energy (kW)</div>
+        <div class="mini-chart-wrap"><canvas id="energyChart"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-label">🌬️ Air Quality Index</div>
+        <div class="mini-chart-wrap"><canvas id="aqiChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- System Log -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--teal)"></span>System Log</div>
+      <div class="log-list" id="logList">
+        <div class="log-entry">
+          <div class="log-dot" style="background:var(--teal)"></div>
+          <div><span class="log-time" id="initTime"></span><br><span class="log-msg">Digital twin initialized. All sensors online.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Education -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--lavender)"></span>About Digital Twins</div>
+      <div class="info-accordion">
+        <div class="info-item">
+          <div class="info-header" onclick="toggleAccordion(this)">
+            What is a Digital Twin? <span class="chevron">▾</span>
+          </div>
+          <div class="info-body">
+            A <strong>digital twin</strong> is a virtual replica of a physical system, updated in real time using sensor data. It mirrors the real world digitally, allowing monitoring, simulation, and control without physically interacting with the system.
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-header" onclick="toggleAccordion(this)">
+            How are systems represented? <span class="chevron">▾</span>
+          </div>
+          <div class="info-body">
+            Physical properties like <strong>temperature, humidity, and energy</strong> are captured by IoT sensors and streamed to the digital model. The virtual room here simulates this: sliders represent sensor inputs, and the room reacts accordingly.
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-header" onclick="toggleAccordion(this)">
+            Real-world Applications <span class="chevron">▾</span>
+          </div>
+          <div class="info-body">
+            Digital twins power <strong>smart buildings, manufacturing, healthcare, aerospace</strong>, and city planning. NASA used them for Apollo 13. Modern factories use them to predict machine failures before they occur.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+/* ═══════════════════════════════════════════
+   SMART ROOM DIGITAL TWIN — MAIN CONTROLLER
+   ═══════════════════════════════════════════ */
+
+/* ── STATE ─────────────────────────────────── */
+const state = {
+  temp: 22, hum: 55,
+  fan: false, light: false, window: false, ac: false,
+  energy: 0, aqi: 45,
+  history: { temp:[], hum:[], energy:[], aqi:[] },
+  maxHistory: 40,
+};
+
+/* ── DOM REFS ───────────────────────────────── */
+const $ = id => document.getElementById(id);
+
+/* ── CLOCK ──────────────────────────────────── */
+function updateClock() {
+  $('clock').textContent = new Date().toLocaleTimeString('en-GB');
+}
+updateClock();
+setInterval(updateClock, 1000);
+$('initTime').textContent = new Date().toLocaleTimeString('en-GB');
+
+/* ── SLIDERS ────────────────────────────────── */
+$('tempSlider').addEventListener('input', function() {
+  state.temp = +this.value;
+  $('tempLabel').textContent = state.temp + '°C';
+  updateAll();
+});
+$('humSlider').addEventListener('input', function() {
+  state.hum = +this.value;
+  $('humLabel').textContent = state.hum + '%';
+  updateAll();
+});
+
+/* ── DEVICE TOGGLES ─────────────────────────── */
+function toggleDevice(dev) {
+  state[dev] = !state[dev];
+  const labels = { fan:'Fan', light:'Light', window:'Window', ac:'A/C' };
+  const states  = { fan:['OFF','ON'], light:['OFF','ON'], window:['CLOSED','OPEN'], ac:['OFF','ON'] };
+  const btnId   = { fan:'btnFan', light:'btnLight', window:'btnWindow', ac:'btnAc' };
+  const stId    = { fan:'fanState', light:'lightState', window:'windowState', ac:'acState' };
+
+  const btn = $(btnId[dev]);
+  const stEl = $(stId[dev]);
+  const isOn = state[dev];
+  btn.classList.toggle('on', isOn);
+  stEl.textContent = isOn ? states[dev][1] : states[dev][0];
+
+  // fan icon spin
+  if (dev === 'fan') {
+    $('fanIcon').parentElement.style.animation = isOn ? 'spin 1s linear infinite' : 'none';
+  }
+
+  addLog(labels[dev] + ' ' + (isOn ? 'turned ON' : 'turned OFF'),
+         dev === 'fan' ? 'var(--teal)' : dev === 'light' ? 'var(--amber)' : dev === 'window' ? 'var(--sky)' : 'var(--lavender)');
+  updateAll();
+}
+
+/* ── MASTER UPDATE ──────────────────────────── */
+function updateAll() {
+  updateStats();
+  updateRoom();
+  updateEnergy();
+  updateGauge();
+  pushHistory();
+}
+
+/* ── STATS ──────────────────────────────────── */
+function updateStats() {
+  const t = state.temp;
+  $('statTemp').innerHTML = t + '<span class="stat-unit">°C</span>';
+  $('statTempSub').textContent = t < 16 ? 'Too cold' : t > 30 ? 'Too hot' : 'Comfortable range';
+
+  const h = state.hum;
+  $('statHum').innerHTML = h + '<span class="stat-unit">%</span>';
+  $('statHumSub').textContent = h < 30 ? 'Very dry' : h > 70 ? 'Too humid' : 'Optimal level';
+
+  const statusStr = computeStatus();
+  $('statStatus').textContent = statusStr;
+  $('statStatusSub').textContent = countActive() + ' device(s) active';
+}
+
+function computeStatus() {
+  if (state.temp > 35 || state.temp < 12) return '⚠ Alert';
+  if (state.hum > 80 || state.hum < 20) return '⚠ Alert';
+  if (state.fan && state.ac) return '✓ Cooling';
+  if (state.light) return '✓ Occupied';
+  return '✓ All Normal';
+}
+function countActive() {
+  return ['fan','light','window','ac'].filter(d=>state[d]).length;
+}
+
+/* ── ROOM UPDATE ────────────────────────────── */
+function updateRoom() {
+  const t = state.temp;
+  // Wall color by temperature: cool blue → warm orange
+  const r0 = Math.round(lerp(210, 255, (t-10)/30));
+  const g0 = Math.round(lerp(230, 220, (t-10)/30));
+  const b0 = Math.round(lerp(255, 190, (t-10)/30));
+  const r1 = Math.round(lerp(190, 240, (t-10)/30));
+  const g1 = Math.round(lerp(220, 200, (t-10)/30));
+  const b1 = Math.round(lerp(250, 165, (t-10)/30));
+  $('wallTop').setAttribute('stop-color', `rgb(${r0},${g0},${b0})`);
+  $('wallBot').setAttribute('stop-color', `rgb(${r1},${g1},${b1})`);
+
+  // Light
+  const lightOn = state.light;
+  $('lightRays').style.opacity = lightOn ? '1' : '0';
+  $('lightGlowRect').style.opacity = lightOn ? '1' : '0';
+  $('bulbGlow').style.fill = lightOn ? 'rgba(255,220,80,0.9)' : 'rgba(255,220,100,0)';
+  $('roomGlow').classList.toggle('on', lightOn);
+  $('monitorGlow').style.opacity = lightOn ? '0.7' : '0.2';
+
+  // Fan blades animation via CSS
+  $('fanBlades').style.animation = state.fan ? 'spin 0.6s linear infinite' : 'none';
+
+  // Window
+  const winOpen = state.window;
+  $('windowGlass').style.fill = winOpen ? 'rgba(180,225,255,0.15)' : 'rgba(180,220,255,0.35)';
+  $('windowOpen1').style.opacity = winOpen ? '1' : '0';
+  $('windowLabel').textContent = winOpen ? 'OPEN' : 'CLOSED';
+  $('breezeLines').style.opacity = winOpen ? '1' : '0';
+
+  // Thermometer fill
+  const thermH = Math.round((t-10)/30 * 44); // max 44px tall
+  const thermY = 10 - thermH;
+  $('thermFill').setAttribute('height', thermH);
+  $('thermFill').setAttribute('y', thermY);
+  const tr = Math.round(lerp(100,224,(t-10)/30));
+  const tg = Math.round(lerp(180,80,(t-10)/30));
+  const tb = Math.round(lerp(220,80,(t-10)/30));
+  $('thermFill').style.fill = `rgb(${tr},${tg},${tb})`;
+  document.querySelector('#roomSvg circle[cx="0"]') && null; // silence
+  // update temp overlay
+  $('tempOverlay').textContent = state.temp + '°C';
+}
+
+/* ── ENERGY CALC ────────────────────────────── */
+function updateEnergy() {
+  let e = 0.05; // baseline
+  if (state.fan)    e += 0.08;
+  if (state.light)  e += 0.06;
+  if (state.ac)     e += 0.45;
+  if (state.window) e -= 0.02;
+  // temperature penalty
+  if (state.temp > 30) e += (state.temp-30)*0.02;
+  if (state.temp < 16) e += (16-state.temp)*0.015;
+  state.energy = Math.max(0.03, +e.toFixed(2));
+  $('statEnergy').innerHTML = state.energy + '<span class="stat-unit">kW</span>';
+  const sub = state.energy < 0.2 ? 'Low consumption' : state.energy < 0.5 ? 'Moderate usage' : 'High consumption';
+  $('statEnergySub').textContent = sub;
+}
+
+/* ── AQI SIMULATION ─────────────────────────── */
+function updateAqi() {
+  // window open improves AQI, fan helps circulate, high temp slightly worsens
+  let aqi = 40;
+  if (state.window) aqi -= 15;
+  if (state.fan) aqi -= 5;
+  aqi += (state.temp - 20) * 0.8;
+  aqi += Math.random() * 6 - 3;
+  state.aqi = Math.max(5, Math.min(150, Math.round(aqi)));
+}
+
+/* ── GAUGE ──────────────────────────────────── */
+function updateGauge() {
+  const maxE = 0.7, minE = 0;
+  const pct = Math.min(1, state.energy / maxE);
+  const totalLen = 172;
+  const offset = totalLen - pct * totalLen;
+  $('gaugeFill').setAttribute('stroke-dashoffset', offset.toFixed(1));
+  // needle: -90deg = 0, +90deg = max => rotate(-90 + pct*180)
+  const deg = -90 + pct * 180;
+  $('gaugeNeedle').style.transform = `rotate(${deg}deg)`;
+  $('gaugeVal').innerHTML = state.energy + ' <span style="font-size:.75rem;font-weight:500;opacity:.5">kW</span>';
+  $('gaugeSub').textContent = state.energy < 0.2 ? 'Low — Efficient' : state.energy < 0.45 ? 'Moderate' : 'High — Check devices';
+}
+
+/* ── HISTORY ────────────────────────────────── */
+function pushHistory() {
+  updateAqi();
+  const keys = ['temp','hum','energy','aqi'];
+  const vals  = [state.temp, state.hum, state.energy, state.aqi];
+  keys.forEach((k,i) => {
+    state.history[k].push(vals[i]);
+    if (state.history[k].length > state.maxHistory) state.history[k].shift();
+  });
+  drawCharts();
+}
+
+/* ── LOG ────────────────────────────────────── */
+function addLog(msg, color='var(--teal)') {
+  const list = $('logList');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<div class="log-dot" style="background:${color}"></div>
+    <div><span class="log-time">${new Date().toLocaleTimeString('en-GB')}</span><br><span class="log-msg">${msg}</span></div>`;
+  list.insertBefore(entry, list.firstChild);
+  while (list.children.length > 12) list.removeChild(list.lastChild);
+}
+
+/* ── ACCORDION ──────────────────────────────── */
+function toggleAccordion(header) {
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.info-body').forEach(b => { b.classList.remove('open'); b.previousElementSibling.classList.remove('open'); });
+  if (!isOpen) { body.classList.add('open'); header.classList.add('open'); }
+}
+
+/* ── MINI CHARTS ────────────────────────────── */
+const charts = {};
+function initChart(id, color, fillColor, min, max) {
+  const canvas = $(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = canvas.parentElement.offsetHeight;
+  charts[id] = { ctx, color, fillColor, min, max };
+}
+
+function drawChart(id) {
+  const c = charts[id];
+  if (!c) return;
+  const key = id.replace('Chart','');
+  const data = state.history[key] || [];
+  const { ctx, color, fillColor, min, max } = c;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  if (data.length < 2) return;
+
+  // grid lines
+  ctx.strokeStyle = 'rgba(180,165,145,0.12)';
+  ctx.lineWidth = 1;
+  [0.25,0.5,0.75].forEach(t => {
+    const y = H - t*H;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  });
+
+  const pts = data.map((v,i) => ({
+    x: (i/(data.length-1)) * W,
+    y: H - ((v-min)/(max-min)) * (H-6) - 3
+  }));
+
+  // fill
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, fillColor);
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, H);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // last dot
+  const lp = pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(lp.x, lp.y, 3.5, 0, Math.PI*2);
+  ctx.fillStyle = color; ctx.fill();
+
+  // latest value label
+  const lastVal = data[data.length-1];
+  ctx.fillStyle = color;
+  ctx.font = '600 10px Karla, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(typeof lastVal === 'number' ? lastVal.toFixed(key==='energy'?2:0) : lastVal, W-4, 12);
+}
+
+function drawCharts() {
+  drawChart('tempChart');
+  drawChart('humChart');
+  drawChart('energyChart');
+  drawChart('aqiChart');
+}
+
+/* ── LERP HELPER ────────────────────────────── */
+function lerp(a,b,t) { return a + (b-a) * Math.max(0,Math.min(1,t)); }
+
+/* ── LIVE TICK (simulate sensor noise) ─────── */
+function liveTick() {
+  // Small random drifts to simulate real sensor readings
+  const tempNoise = (Math.random()-0.5)*0.3;
+  const humNoise  = (Math.random()-0.5)*0.8;
+  // Don't actually move the sliders, just push to history with noise
+  const noisyTemp = Math.max(10, Math.min(40, state.temp + tempNoise));
+  const noisyHum  = Math.max(0, Math.min(100, state.hum + humNoise));
+  state.history.temp.push(+noisyTemp.toFixed(1));
+  state.history.hum.push(+noisyHum.toFixed(1));
+  if (state.history.temp.length > state.maxHistory) state.history.temp.shift();
+  if (state.history.hum.length > state.maxHistory) state.history.hum.shift();
+  updateAqi();
+  state.history.aqi.push(state.aqi);
+  if (state.history.aqi.length > state.maxHistory) state.history.aqi.shift();
+  state.history.energy.push(+(state.energy + (Math.random()-0.5)*0.01).toFixed(3));
+  if (state.history.energy.length > state.maxHistory) state.history.energy.shift();
+  drawCharts();
+}
+
+/* ── INIT ───────────────────────────────────── */
+window.addEventListener('load', () => {
+  initChart('tempChart',   '#e8a44a', 'rgba(232,164,74,0.18)',  10, 40);
+  initChart('humChart',    '#6aaed6', 'rgba(106,174,214,0.18)', 0, 100);
+  initChart('energyChart', '#9d8ec8', 'rgba(157,142,200,0.18)', 0, 0.8);
+  initChart('aqiChart',    '#8ab89a', 'rgba(138,184,154,0.18)', 0, 150);
+
+  // Prime history with initial values
+  for (let i=0; i<10; i++) {
+    state.history.temp.push(state.temp + (Math.random()-0.5)*0.5);
+    state.history.hum.push(state.hum + (Math.random()-0.5)*1);
+    state.history.energy.push(0.11);
+    state.history.aqi.push(42 + Math.random()*4-2);
+  }
+  updateAll();
+  setInterval(liveTick, 1500);
+  // periodic log messages
+  const msgs = [
+    ['Sensor readings nominal','var(--teal)'],
+    ['Temperature stable','var(--amber)'],
+    ['Humidity within range','var(--sky)'],
+    ['Energy monitoring active','var(--lavender)'],
+    ['Digital twin sync: OK','var(--teal)'],
+  ];
+  let mi=0;
+  setInterval(()=>{ addLog(msgs[mi%msgs.length][0], msgs[mi%msgs.length][1]); mi++; }, 8000);
+});
+
+window.addEventListener('resize', () => {
+  ['tempChart','humChart','energyChart','aqiChart'].forEach(id=>{
+    const canvas = $(id);
+    if (!canvas) return;
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = canvas.parentElement.offsetHeight;
+  });
+  drawCharts();
+});
+</script>
+</body>
+</html>
 
