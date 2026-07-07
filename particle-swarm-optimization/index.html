@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSO · Particle Swarm Optimization Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:      #020810;
+  --bg1:      #060d1a;
+  --bg2:      #0a1628;
+  --panel:    rgba(6,18,42,0.82);
+  --border:   rgba(0,220,180,0.12);
+  --neon-g:   #00ffb2;
+  --neon-b:   #00c8ff;
+  --neon-y:   #ffe259;
+  --neon-p:   #bf5fff;
+  --neon-r:   #ff4f7b;
+  --dim:      rgba(180,210,255,0.35);
+  --text:     #c8e0ff;
+  --text-dim: rgba(140,175,220,0.55);
+  --radius:   14px;
+  --radius-sm:8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Inconsolata', monospace;
+  background: radial-gradient(ellipse at 20% 20%, #030f22 0%, #020810 60%, #050a14 100%);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── STARS ─────────────────────────────────── */
+#stars {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 22%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 47% 8%,  rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 73% 35%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 67%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 32% 81%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 55%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 5% 50%, rgba(0,200,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 95% 15%, rgba(0,255,180,0.3) 0%, transparent 100%);
+}
+
+/* ── HEADER ────────────────────────────────── */
+header {
+  position: relative; z-index: 10;
+  text-align: center;
+  padding: 14px 20px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(0,255,178,0.04) 0%, transparent 100%);
+}
+header .subtitle {
+  font-size: 0.67rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--neon-g);
+  margin-bottom: 2px;
+  text-shadow: 0 0 10px var(--neon-g);
+}
+header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1rem, 2.5vw, 1.65rem);
+  font-weight: 900;
+  letter-spacing: .08em;
+  background: linear-gradient(90deg, var(--neon-b), var(--neon-g));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 12px rgba(0,200,255,0.5));
+}
+
+/* ── LAYOUT ────────────────────────────────── */
+.app {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+  position: relative; z-index: 2;
+}
+
+/* ── CONTROL BAR ───────────────────────────── */
+.ctrl-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(2,8,16,0.7);
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  padding: 8px 18px;
+  border: 1px solid;
+  border-radius: 50px;
+  cursor: pointer;
+  background: transparent;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.btn:hover::before { opacity: 0.1; }
+.btn:active { transform: scale(0.95); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-start { color: var(--neon-g); border-color: var(--neon-g); box-shadow: 0 0 12px rgba(0,255,178,0.2); }
+.btn-start:hover:not(:disabled) { box-shadow: 0 0 22px rgba(0,255,178,0.45); }
+.btn-pause { color: var(--neon-b); border-color: var(--neon-b); box-shadow: 0 0 12px rgba(0,200,255,0.2); }
+.btn-pause:hover:not(:disabled) { box-shadow: 0 0 22px rgba(0,200,255,0.45); }
+.btn-reset { color: var(--neon-r); border-color: var(--neon-r); box-shadow: 0 0 12px rgba(255,79,123,0.2); }
+.btn-reset:hover { box-shadow: 0 0 22px rgba(255,79,123,0.45); }
+
+.speed-wrap {
+  display: flex; align-items: center; gap: 10px;
+  margin-left: auto;
+}
+.speed-wrap label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: .12em;
+  color: var(--neon-y);
+  text-shadow: 0 0 8px var(--neon-y);
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 110px; height: 4px;
+  background: linear-gradient(90deg, var(--neon-g), var(--neon-b));
+  border-radius: 10px;
+  outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--neon-b);
+  box-shadow: 0 0 10px var(--neon-b);
+  transition: transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+.speed-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  color: var(--neon-b);
+  min-width: 16px;
+}
+
+/* stats */
+.stat-strip {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.stat {
+  display: flex; flex-direction: column;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(0,255,178,0.03);
+  min-width: 90px;
+}
+.stat-label {
+  font-size: 0.55rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 1px;
+}
+.stat-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--neon-g);
+  text-shadow: 0 0 8px var(--neon-g);
+}
+#statStage .stat-val { font-size: 0.6rem; color: var(--neon-y); text-shadow: 0 0 8px var(--neon-y); letter-spacing: .04em; }
+
+/* ── CANVAS ─────────────────────────────────── */
+.canvas-area {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+#mainCanvas { display: block; width: 100%; height: 100%; }
+
+.canvas-badge {
+  position: absolute; top: 12px; left: 14px;
+  font-size: 0.6rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+/* tooltip */
+#tip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(2,12,30,0.92);
+  border: 1px solid var(--neon-b);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 0.72rem;
+  color: var(--neon-b);
+  opacity: 0;
+  transition: opacity .2s;
+  white-space: nowrap;
+  box-shadow: 0 0 14px rgba(0,200,255,0.25);
+}
+#tip.show { opacity: 1; }
+
+/* ── SIDE PANEL ─────────────────────────────── */
+.side {
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(2,8,20,0.88);
+}
+
+.side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 10px 4px;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.tab.active { color: var(--neon-g); border-bottom-color: var(--neon-g); text-shadow: 0 0 8px var(--neon-g); }
+.tab:hover:not(.active) { color: var(--text); }
+
+.tab-content { display: none; flex: 1; overflow-y: auto; padding: 14px; scrollbar-width: thin; scrollbar-color: var(--neon-g) transparent; }
+.tab-content.active { display: block; }
+
+/* log */
+.log-entry {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  padding: 7px 9px;
+  margin-bottom: 6px;
+  border-left: 2px solid var(--neon-g);
+  background: rgba(0,255,178,0.04);
+  border-radius: 0 6px 6px 0;
+  animation: slideIn .3s ease;
+  color: var(--text);
+}
+.log-entry.gbest { border-left-color: var(--neon-y); background: rgba(255,226,89,0.06); }
+.log-entry.pbest { border-left-color: var(--neon-p); background: rgba(191,95,255,0.05); }
+.log-entry.info  { border-left-color: var(--neon-b); background: rgba(0,200,255,0.04); }
+@keyframes slideIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+
+/* education */
+.edu-section { margin-bottom: 18px; }
+.edu-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: .12em;
+  color: var(--neon-g);
+  text-shadow: 0 0 8px var(--neon-g);
+  margin-bottom: 7px;
+  display: flex; align-items: center; gap: 6px;
+}
+.edu-title::before { content: '▸'; }
+.edu-body {
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: rgba(180,210,255,0.75);
+}
+.edu-body strong { color: var(--neon-b); }
+.edu-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* legend */
+.legend { display: flex; flex-direction: column; gap: 10px; }
+.leg-item { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; }
+.leg-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.leg-particle { background: rgba(0,200,255,0.7); box-shadow: 0 0 8px rgba(0,200,255,0.8); }
+.leg-gbest    { background: var(--neon-y); box-shadow: 0 0 12px var(--neon-y); }
+.leg-pbest    { background: rgba(191,95,255,0.7); box-shadow: 0 0 8px rgba(191,95,255,0.8); }
+.leg-vel      { background: linear-gradient(90deg, var(--neon-g), transparent); height: 3px; border-radius: 2px; width: 22px; }
+.leg-trail    { background: linear-gradient(90deg, rgba(0,200,255,0.5), transparent); height: 2px; border-radius: 2px; width: 22px; }
+
+/* algo steps panel */
+.algo-step {
+  display: flex; gap: 9px;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  transition: background .2s, box-shadow .2s;
+  font-size: 0.71rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+}
+.algo-step.active {
+  background: rgba(0,255,178,0.06);
+  border-color: rgba(0,255,178,0.2);
+  color: var(--text);
+  box-shadow: 0 0 12px rgba(0,255,178,0.08);
+}
+.algo-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,255,178,0.1);
+  border: 1px solid rgba(0,255,178,0.3);
+  color: var(--neon-g);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .2s;
+}
+.algo-step.active .algo-num {
+  background: var(--neon-g);
+  color: var(--bg0);
+  box-shadow: 0 0 10px var(--neon-g);
+}
+
+/* fitness chart */
+.chart-wrap { height: 80px; margin-top: 14px; position: relative; }
+#fChart { width: 100%; height: 100%; }
+
+/* convergence meter */
+.conv-bar-wrap {
+  margin: 10px 0 4px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.conv-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--neon-b), var(--neon-g));
+  box-shadow: 0 0 8px var(--neon-g);
+  transition: width .4s ease;
+  width: 0%;
+}
+.conv-label { font-size: 0.6rem; color: var(--text-dim); margin-bottom: 2px; letter-spacing: .1em; text-transform: uppercase; }
+
+@media (max-width: 720px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .side { max-height: 240px; border-left: none; border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<header>
+  <div class="subtitle">Nature-Inspired Optimization · University Edition</div>
+  <h1>Particle Swarm Optimization</h1>
+</header>
+
+<div class="app">
+
+  <!-- Control bar -->
+  <div class="ctrl-bar">
+    <button class="btn btn-start" id="btnStart">▶ START</button>
+    <button class="btn btn-pause" id="btnPause" disabled>⏸ PAUSE</button>
+    <button class="btn btn-reset" id="btnReset">↺ RESET</button>
+
+    <div class="stat-strip">
+      <div class="stat">
+        <span class="stat-label">Iteration</span>
+        <span class="stat-val" id="sIter">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Particles</span>
+        <span class="stat-val" id="sCount">30</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Best Fitness</span>
+        <span class="stat-val" id="sFitness">—</span>
+      </div>
+      <div class="stat" id="statStage">
+        <span class="stat-label">Stage</span>
+        <span class="stat-val" id="sStage">READY</span>
+      </div>
+    </div>
+
+    <div class="speed-wrap">
+      <label>SPEED</label>
+      <input type="range" id="speedSlider" min="1" max="10" value="5">
+      <span class="speed-val" id="speedVal">5</span>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-area" id="canvasArea">
+    <span class="canvas-badge">2D SEARCH SPACE · ACKLEY FUNCTION</span>
+    <canvas id="mainCanvas"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <!-- Side panel -->
+  <div class="side">
+    <div class="side-tabs">
+      <div class="tab active" data-tab="log">LOG</div>
+      <div class="tab" data-tab="steps">STEPS</div>
+      <div class="tab" data-tab="learn">LEARN</div>
+      <div class="tab" data-tab="legend">LEGEND</div>
+    </div>
+
+    <div class="tab-content active" id="tab-log">
+      <div class="conv-label">Convergence Progress</div>
+      <div class="conv-bar-wrap"><div class="conv-bar" id="convBar"></div></div>
+      <div class="chart-wrap"><canvas id="fChart"></canvas></div>
+      <div style="margin-top:12px" id="logContainer"></div>
+    </div>
+
+    <div class="tab-content" id="tab-steps">
+      <div class="algo-step" data-s="0"><div class="algo-num">1</div><div>Initialize N particles at random positions with random velocities</div></div>
+      <div class="algo-step" data-s="1"><div class="algo-num">2</div><div>Evaluate fitness f(xᵢ) for each particle i</div></div>
+      <div class="algo-step" data-s="2"><div class="algo-num">3</div><div>Update personal best pBestᵢ if f(xᵢ) &lt; f(pBestᵢ)</div></div>
+      <div class="algo-step" data-s="3"><div class="algo-num">4</div><div>Update global best gBest if any pBest improves gBest</div></div>
+      <div class="algo-step" data-s="4"><div class="algo-num">5</div><div>Update velocity: vᵢ = ω·vᵢ + c₁·r₁·(pBest−xᵢ) + c₂·r₂·(gBest−xᵢ)</div></div>
+      <div class="algo-step" data-s="5"><div class="algo-num">6</div><div>Update position: xᵢ = xᵢ + vᵢ (clamp to bounds)</div></div>
+      <div class="algo-step" data-s="6"><div class="algo-num">7</div><div>Repeat until max iterations or convergence</div></div>
+    </div>
+
+    <div class="tab-content" id="tab-learn">
+      <div class="edu-section">
+        <div class="edu-title">What is a Particle?</div>
+        <div class="edu-body">A <strong>particle</strong> is a candidate solution — a point in the search space. Each glowing firefly on screen represents one particle exploring where the optimum might be. It has a <strong>position</strong> (where it is) and a <strong>velocity</strong> (how fast &amp; which direction it moves).</div>
+      </div>
+      <hr class="edu-divider">
+      <div class="edu-section">
+        <div class="edu-title">What is Velocity?</div>
+        <div class="edu-body">Velocity is the <strong>direction and speed</strong> of a particle's movement. Each iteration, velocity is adjusted based on three forces: <strong>inertia</strong> (keep moving as before), <strong>cognitive pull</strong> (drift toward own best), and <strong>social pull</strong> (drift toward swarm's best). The green arrow shows each particle's velocity.</div>
+      </div>
+      <hr class="edu-divider">
+      <div class="edu-section">
+        <div class="edu-title">What is Personal Best (pBest)?</div>
+        <div class="edu-body"><strong>pBest</strong> is the best position <em>this particle</em> has ever visited. Shown as a purple ghost dot, it acts as the particle's own memory — always pulling it back toward its best discovered location.</div>
+      </div>
+      <hr class="edu-divider">
+      <div class="edu-section">
+        <div class="edu-title">What is Global Best (gBest)?</div>
+        <div class="edu-body"><strong>gBest</strong> is the best solution <em>the entire swarm</em> has ever found. Shown as a blazing gold star ★, it acts as the shared knowledge that attracts all particles. Once any particle finds a better solution, gBest is updated and the whole swarm shifts toward it.</div>
+      </div>
+      <hr class="edu-divider">
+      <div class="edu-section">
+        <div class="edu-title">Exploration vs Exploitation</div>
+        <div class="edu-body">Early on, particles <strong>explore</strong> widely (high randomness, spread out). Over time they <strong>exploit</strong> — narrowing in on promising regions. This balance is controlled by the inertia weight ω, which decreases over iterations from 0.9 → 0.4.</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-legend">
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot leg-particle"></div><span>Regular particle (current position)</span></div>
+        <div class="leg-item"><div class="leg-dot leg-gbest"></div><span>Global best position (gBest ★)</span></div>
+        <div class="leg-item"><div class="leg-dot leg-pbest"></div><span>Personal best ghost (pBest)</span></div>
+        <div class="leg-item"><div class="leg-vel"></div><span>Velocity vector (green arrow)</span></div>
+        <div class="leg-item"><div class="leg-trail"></div><span>Particle trail (recent path)</span></div>
+        <div style="margin-top:16px;font-size:0.68rem;color:var(--text-dim);line-height:1.6">
+          <div style="margin-bottom:6px;font-family:'Orbitron',sans-serif;font-size:0.58rem;letter-spacing:.12em;color:var(--neon-b)">PSO PARAMETERS</div>
+          <div>ω (inertia): 0.9 → 0.4 (linear decay)</div>
+          <div>c₁ (cognitive): 2.0</div>
+          <div>c₂ (social): 2.0</div>
+          <div>Particles: 30</div>
+          <div>Max Iterations: 150</div>
+          <div>Fitness: Ackley function (min=0)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   PSO VISUAL LEARNING SIMULATOR
+   ══════════════════════════════════════════════════ */
+
+/* ── CONFIG ──────────────────────────────────────── */
+const CFG = {
+  N: 30,
+  maxIter: 150,
+  wStart: 0.9, wEnd: 0.4,
+  c1: 2.0, c2: 2.0,
+  vMax: 0.4,
+  domain: [-5, 5],
+  trailLen: 18,
+};
+
+/* ── FITNESS (Ackley 2D, min=0 at origin) ─────────── */
+function fit(x, y) {
+  const a=20, b=0.2, c=2*Math.PI;
+  return -a*Math.exp(-b*Math.sqrt(0.5*(x*x+y*y)))
+         -Math.exp(0.5*(Math.cos(c*x)+Math.cos(c*y)))
+         +a+Math.E;
+}
+const FIT_MAX = 14;
+
+/* ── UTILS ───────────────────────────────────────── */
+const rand = (a=0,b=1) => a+Math.random()*(b-a);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const mapR = (v,a,b,c,d) => c+(v-a)/(b-a)*(d-c);
+
+/* ── DOM ─────────────────────────────────────────── */
+const mc = document.getElementById('mainCanvas');
+const ctx = mc.getContext('2d');
+const fc = document.getElementById('fChart');
+const fctx = fc.getContext('2d');
+const ca = document.getElementById('canvasArea');
+const tip = document.getElementById('tip');
+const convBar = document.getElementById('convBar');
+const logCont = document.getElementById('logContainer');
+const btnStart = document.getElementById('btnStart');
+const btnPause = document.getElementById('btnPause');
+const btnReset = document.getElementById('btnReset');
+const speedSlider = document.getElementById('speedSlider');
+const speedVal = document.getElementById('speedVal');
+const sIter = document.getElementById('sIter');
+const sCount = document.getElementById('sCount');
+const sFitness = document.getElementById('sFitness');
+const sStage = document.getElementById('sStage');
+const algoSteps = document.querySelectorAll('.algo-step');
+
+/* ── STATE ───────────────────────────────────────── */
+let particles=[], gBest=null, gBestF=Infinity;
+let iteration=0, running=false, paused=false, animId=null;
+let lastT=0, interval=300, phase=0;
+let fitnessHist=[], gBestFlash=0;
+
+/* ── CANVAS RESIZE ───────────────────────────────── */
+function resize() {
+  const r = ca.getBoundingClientRect();
+  mc.width = r.width;
+  mc.height = r.height;
+  fc.width = fc.parentElement.getBoundingClientRect().width;
+  fc.height = 80;
+  redraw();
+}
+window.addEventListener('resize', resize);
+
+/* ── COORD TRANSFORM ─────────────────────────────── */
+const D = CFG.domain;
+function toC(x,y) {
+  const W=mc.width,H=mc.height;
+  return {
+    px: mapR(x,D[0],D[1],48,W-48),
+    py: mapR(y,D[0],D[1],H-48,48)
+  };
+}
+function fromC(px,py) {
+  const W=mc.width,H=mc.height;
+  return {
+    x: mapR(px,48,W-48,D[0],D[1]),
+    y: mapR(py,H-48,48,D[0],D[1])
+  };
+}
+
+/* ── INIT ─────────────────────────────────────────── */
+function init() {
+  particles = [];
+  gBest = null; gBestF = Infinity;
+  iteration = 0; phase = 0; fitnessHist = [];
+  gBestFlash = 0;
+
+  for (let i=0;i<CFG.N;i++) {
+    const x=rand(D[0],D[1]), y=rand(D[0],D[1]);
+    const f=fit(x,y);
+    const p = {
+      x, y,
+      vx: rand(-0.3,0.3), vy: rand(-0.3,0.3),
+      pBestX: x, pBestY: y, pBestF: f,
+      f,
+      trail: [],
+      id: i,
+      hue: Math.random()*40+170, // blue-cyan range
+      flash: 0,
+    };
+    particles.push(p);
+    if (f < gBestF) { gBestF=f; gBest={x,y,f}; }
+  }
+  updateStats();
+  clearAlgo();
+  clearLog();
+  addLog('Swarm initialized: <strong>'+CFG.N+' particles</strong> scattered across search space.','info');
+  redraw();
+  drawFitnessChart();
+}
+
+/* ── PSO STEP ─────────────────────────────────────── */
+function psoStep() {
+  if (iteration >= CFG.maxIter) { stop('Simulation complete after '+CFG.maxIter+' iterations.'); return; }
+
+  if (phase === 0) {
+    // evaluate
+    highlightAlgo(1);
+    setStage('EVALUATING');
+    particles.forEach(p => { p.f = fit(p.x, p.y); });
+    phase++;
+
+  } else if (phase === 1) {
+    // update pBest
+    highlightAlgo(2);
+    setStage('PBEST UPDATE');
+    let improved = 0;
+    particles.forEach(p => {
+      if (p.f < p.pBestF) {
+        p.pBestX=p.x; p.pBestY=p.y; p.pBestF=p.f;
+        p.flash=1;
+        improved++;
+      }
+    });
+    if (improved) addLog(`<strong>${improved}</strong> particle(s) updated their personal best ★`,'pbest');
+    phase++;
+
+  } else if (phase === 2) {
+    // update gBest
+    highlightAlgo(3);
+    setStage('GBEST UPDATE');
+    const prev = gBestF;
+    particles.forEach(p => {
+      if (p.pBestF < gBestF) { gBestF=p.pBestF; gBest={x:p.pBestX,y:p.pBestY}; }
+    });
+    if (gBestF < prev) {
+      gBestFlash = 1;
+      addLog(`⚡ New global best: <strong>${gBestF.toFixed(5)}</strong>`,'gbest');
+    }
+    fitnessHist.push(gBestF);
+    updateStats();
+    drawFitnessChart();
+    updateConvBar();
+    phase++;
+
+  } else if (phase === 3) {
+    // update velocity & position
+    iteration++;
+    highlightAlgo(4);
+    setStage('VELOCITY UPDATE');
+    const t = iteration/CFG.maxIter;
+    const w = CFG.wStart - t*(CFG.wStart-CFG.wEnd);
+
+    particles.forEach(p => {
+      const r1=Math.random(), r2=Math.random();
+      p.vx = w*p.vx + CFG.c1*r1*(p.pBestX-p.x) + CFG.c2*r2*(gBest.x-p.x);
+      p.vy = w*p.vy + CFG.c1*r1*(p.pBestY-p.y) + CFG.c2*r2*(gBest.y-p.y);
+      p.vx = clamp(p.vx,-CFG.vMax,CFG.vMax);
+      p.vy = clamp(p.vy,-CFG.vMax,CFG.vMax);
+    });
+    highlightAlgo(5);
+    setStage('POSITION UPDATE');
+    particles.forEach(p => {
+      p.trail.push({x:p.x,y:p.y});
+      if (p.trail.length > CFG.trailLen) p.trail.shift();
+      p.x = clamp(p.x+p.vx, D[0], D[1]);
+      p.y = clamp(p.y+p.vy, D[0], D[1]);
+    });
+    sIter.textContent = iteration;
+    phase = 0;
+  }
+
+  redraw();
+}
+
+/* ── ANIMATION LOOP ───────────────────────────────── */
+function loop(ts) {
+  if (!running||paused) return;
+  // decay flashes
+  particles.forEach(p => { p.flash=Math.max(0,p.flash-0.04); });
+  gBestFlash = Math.max(0, gBestFlash-0.025);
+
+  if (ts-lastT > interval) {
+    lastT=ts;
+    psoStep();
+  }
+  redraw();
+  animId = requestAnimationFrame(loop);
+}
+
+function start() {
+  if (paused) {
+    paused=false; btnPause.textContent='⏸ PAUSE';
+    lastT=performance.now();
+    animId=requestAnimationFrame(loop); return;
+  }
+  if (running) return;
+  running=true;
+  btnStart.disabled=true; btnPause.disabled=false;
+  addLog('Swarm released! Particles begin exploring...','info');
+  lastT=performance.now();
+  animId=requestAnimationFrame(loop);
+}
+function pause() {
+  if (!running) return;
+  paused=!paused;
+  if (paused) { cancelAnimationFrame(animId); btnPause.textContent='▶ RESUME'; addLog('Paused.','info'); }
+  else { btnPause.textContent='⏸ PAUSE'; lastT=performance.now(); animId=requestAnimationFrame(loop); addLog('Resumed.','info'); }
+}
+function stop(msg) {
+  running=false; paused=false;
+  cancelAnimationFrame(animId);
+  btnStart.disabled=false; btnPause.disabled=true;
+  btnPause.textContent='⏸ PAUSE';
+  highlightAlgo(6);
+  setStage('COMPLETE');
+  if(msg) addLog('🏁 '+msg,'info');
+}
+function reset() {
+  stop();
+  clearAlgo();
+  init();
+}
+
+/* ── DRAW ─────────────────────────────────────────── */
+function redraw() {
+  const W=mc.width,H=mc.height;
+  ctx.clearRect(0,0,W,H);
+  drawBg(W,H);
+  drawGrid(W,H);
+  drawContour(W,H);
+  drawPBests(W,H);
+  drawTrails(W,H);
+  drawParticles(W,H);
+  drawGBest(W,H);
+  drawVelocities(W,H);
+}
+
+function drawBg(W,H) {
+  const g=ctx.createRadialGradient(W*.5,H*.5,0,W*.5,H*.5,Math.max(W,H)*.7);
+  g.addColorStop(0,'rgba(8,18,42,0.95)');
+  g.addColorStop(1,'rgba(2,6,16,0.98)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+function drawGrid(W,H) {
+  ctx.save();
+  ctx.strokeStyle='rgba(0,200,180,0.07)'; ctx.lineWidth=1;
+  for(let v=D[0];v<=D[1];v++) {
+    const {px}=toC(v,0); ctx.beginPath(); ctx.moveTo(px,48); ctx.lineTo(px,H-48); ctx.stroke();
+    const {py}=toC(0,v); ctx.beginPath(); ctx.moveTo(48,py); ctx.lineTo(W-48,py); ctx.stroke();
+  }
+  ctx.fillStyle='rgba(100,160,200,0.3)'; ctx.font='10px Inconsolata';
+  for(let v=D[0];v<=D[1];v++) {
+    const {px}=toC(v,0); ctx.fillText(v,px-4,H-32);
+    const {py}=toC(0,v); ctx.fillText(v,16,py+3);
+  }
+  ctx.restore();
+}
+
+function drawContour(W,H) {
+  const step=5;
+  for(let px=48;px<W-48;px+=step) {
+    for(let py=48;py<H-48;py+=step) {
+      const {x,y}=fromC(px,py);
+      const f=fit(x,y);
+      const t=clamp(f/FIT_MAX,0,1);
+      // dark teal gradient
+      const r=Math.round(0+t*15);
+      const g=Math.round(40+t*30);
+      const b=Math.round(80-t*30);
+      ctx.fillStyle=`rgba(${r},${g+20},${b+80},${0.18-t*0.08})`;
+      ctx.fillRect(px,py,step,step);
+    }
+  }
+}
+
+function drawPBests(W,H) {
+  particles.forEach(p => {
+    const {px,py}=toC(p.pBestX,p.pBestY);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2);
+    ctx.fillStyle='rgba(191,95,255,0.45)';
+    ctx.shadowColor='rgba(191,95,255,0.8)'; ctx.shadowBlur=8;
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawTrails(W,H) {
+  particles.forEach(p => {
+    if (p.trail.length < 2) return;
+    ctx.save(); ctx.beginPath();
+    const {px:sx,py:sy}=toC(p.trail[0].x,p.trail[0].y);
+    ctx.moveTo(sx,sy);
+    p.trail.forEach(pt => { const {px,py}=toC(pt.x,pt.y); ctx.lineTo(px,py); });
+    ctx.strokeStyle=`hsla(${p.hue},100%,65%,0.18)`;
+    ctx.lineWidth=1; ctx.lineJoin='round'; ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawParticles(W,H) {
+  particles.forEach(p => {
+    const {px,py}=toC(p.x,p.y);
+    const glow = 6 + p.flash*18;
+    ctx.save();
+    // glow
+    const grad=ctx.createRadialGradient(px,py,0,px,py,glow*2.5);
+    grad.addColorStop(0,`hsla(${p.hue},100%,70%,${0.15+p.flash*0.3})`);
+    grad.addColorStop(1,`hsla(${p.hue},100%,70%,0)`);
+    ctx.beginPath(); ctx.arc(px,py,glow*2.5,0,Math.PI*2);
+    ctx.fillStyle=grad; ctx.fill();
+    // core
+    ctx.beginPath(); ctx.arc(px,py,4+p.flash*2,0,Math.PI*2);
+    ctx.fillStyle=`hsl(${p.hue},100%,72%)`;
+    ctx.shadowColor=`hsl(${p.hue},100%,72%)`; ctx.shadowBlur=glow;
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawGBest(W,H) {
+  if (!gBest) return;
+  const {px,py}=toC(gBest.x,gBest.y);
+  const t=performance.now()/1000;
+  const pulse=1+Math.sin(t*4)*0.3;
+  const r=14*pulse + gBestFlash*16;
+  ctx.save();
+  // outer glow
+  const gg=ctx.createRadialGradient(px,py,0,px,py,r*3.5);
+  gg.addColorStop(0,`rgba(255,226,89,${0.3+gBestFlash*0.4})`);
+  gg.addColorStop(1,'rgba(255,226,89,0)');
+  ctx.beginPath(); ctx.arc(px,py,r*3.5,0,Math.PI*2);
+  ctx.fillStyle=gg; ctx.fill();
+  // star shape
+  ctx.fillStyle='#ffe259';
+  ctx.shadowColor='#ffe259'; ctx.shadowBlur=20+gBestFlash*30;
+  drawStar(ctx,px,py,5,r,r*.45);
+  // label
+  ctx.font='bold 10px Inconsolata';
+  ctx.fillStyle='rgba(255,226,89,0.85)';
+  ctx.textAlign='center';
+  ctx.fillText('gBest',px,py-r-6);
+  ctx.restore();
+}
+
+function drawVelocities(W,H) {
+  particles.forEach(p => {
+    const {px,py}=toC(p.x,p.y);
+    const speed=Math.hypot(p.vx,p.vy);
+    if (speed < 0.01) return;
+    // scale velocity arrow for display
+    const scale=30;
+    const {px:tx,py:ty}=toC(p.x+p.vx,p.y+p.vy);
+    const ex=px+(tx-px)*1, ey=py+(ty-py)*1;
+    ctx.save();
+    ctx.strokeStyle=`rgba(0,255,178,${0.2+speed*0.5})`;
+    ctx.lineWidth=1;
+    ctx.shadowColor='rgba(0,255,178,0.5)'; ctx.shadowBlur=3;
+    // arrow
+    const ang=Math.atan2(ey-py,ex-px);
+    const len=Math.hypot(ex-px,ey-py);
+    const arrLen=Math.min(len,20);
+    const ex2=px+Math.cos(ang)*arrLen, ey2=py+Math.sin(ang)*arrLen;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(ex2,ey2); ctx.stroke();
+    // arrowhead
+    ctx.beginPath();
+    ctx.moveTo(ex2,ey2);
+    ctx.lineTo(ex2-6*Math.cos(ang-0.4),ey2-6*Math.sin(ang-0.4));
+    ctx.lineTo(ex2-6*Math.cos(ang+0.4),ey2-6*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fillStyle='rgba(0,255,178,0.5)'; ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawStar(ctx,cx,cy,pts,ro,ri) {
+  ctx.beginPath();
+  for(let i=0;i<pts*2;i++) {
+    const ang=-Math.PI/2+i*Math.PI/pts;
+    const r=i%2===0?ro:ri;
+    i===0?ctx.moveTo(cx+r*Math.cos(ang),cy+r*Math.sin(ang)):ctx.lineTo(cx+r*Math.cos(ang),cy+r*Math.sin(ang));
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+/* ── FITNESS CHART ─────────────────────────────────── */
+function drawFitnessChart() {
+  const W=fc.width,H=fc.height;
+  fctx.clearRect(0,0,W,H);
+  if (fitnessHist.length<2) return;
+  const mn=0, mx=Math.max(...fitnessHist, 1);
+  const pts=fitnessHist.map((f,i)=>({
+    x:mapR(i,0,fitnessHist.length-1,4,W-4),
+    y:mapR(f,mn,mx,H-6,6)
+  }));
+  // fill
+  const gf=fctx.createLinearGradient(0,0,0,H);
+  gf.addColorStop(0,'rgba(0,255,178,0.3)');
+  gf.addColorStop(1,'rgba(0,255,178,0)');
+  fctx.beginPath();
+  fctx.moveTo(pts[0].x,H);
+  pts.forEach(p=>fctx.lineTo(p.x,p.y));
+  fctx.lineTo(pts[pts.length-1].x,H);
+  fctx.closePath(); fctx.fillStyle=gf; fctx.fill();
+  // line
+  fctx.beginPath();
+  pts.forEach((p,i)=>i===0?fctx.moveTo(p.x,p.y):fctx.lineTo(p.x,p.y));
+  fctx.strokeStyle='rgba(0,255,178,0.8)';
+  fctx.lineWidth=1.5; fctx.lineJoin='round'; fctx.stroke();
+  // last dot
+  const lp=pts[pts.length-1];
+  fctx.beginPath(); fctx.arc(lp.x,lp.y,3,0,Math.PI*2);
+  fctx.fillStyle='#00ffb2'; fctx.fill();
+}
+
+function updateConvBar() {
+  const pct = Math.min(100, (1 - gBestF/FIT_MAX)*100);
+  convBar.style.width = Math.max(0,pct)+'%';
+}
+
+/* ── UI HELPERS ────────────────────────────────────── */
+function updateStats() {
+  sIter.textContent = iteration;
+  sCount.textContent = CFG.N;
+  sFitness.textContent = gBestF < Infinity ? gBestF.toFixed(5) : '—';
+}
+function setStage(s) { sStage.textContent=s; }
+function highlightAlgo(idx) {
+  algoSteps.forEach(el=>{
+    el.classList.toggle('active', parseInt(el.dataset.s)===idx);
+  });
+}
+function clearAlgo() { algoSteps.forEach(el=>el.classList.remove('active')); }
+
+function addLog(html, type='') {
+  const el=document.createElement('div');
+  el.className='log-entry'+(type?' '+type:'');
+  el.innerHTML=html;
+  logCont.insertBefore(el,logCont.firstChild);
+  while(logCont.children.length>25) logCont.removeChild(logCont.lastChild);
+}
+function clearLog() { logCont.innerHTML=''; }
+
+/* ── TABS ──────────────────────────────────────────── */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── TOOLTIP ───────────────────────────────────────── */
+mc.addEventListener('mousemove',(e)=>{
+  const r=mc.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(mc.width/r.width);
+  const my=(e.clientY-r.top)*(mc.height/r.height);
+  let found=false;
+  for(const p of particles) {
+    const {px,py}=toC(p.x,p.y);
+    if(Math.hypot(mx-px,my-py)<14) {
+      tip.innerHTML=`Particle #${p.id}<br>pos: (${p.x.toFixed(2)}, ${p.y.toFixed(2)})<br>fitness: ${p.f.toFixed(4)}<br>vel: (${p.vx.toFixed(3)}, ${p.vy.toFixed(3)})`;
+      tip.style.left=(e.clientX-r.left+12)+'px';
+      tip.style.top=(e.clientY-r.top-10)+'px';
+      tip.classList.add('show'); found=true; break;
+    }
+  }
+  if(!found) tip.classList.remove('show');
+});
+mc.addEventListener('mouseleave',()=>tip.classList.remove('show'));
+
+/* ── CONTROLS ──────────────────────────────────────── */
+btnStart.addEventListener('click', start);
+btnPause.addEventListener('click', pause);
+btnReset.addEventListener('click', reset);
+speedSlider.addEventListener('input',()=>{
+  const v=parseInt(speedSlider.value);
+  speedVal.textContent=v;
+  interval=mapR(v,1,10,1100,40);
+});
+
+/* ── BOOT ──────────────────────────────────────────── */
+resize();
+init();
+interval=mapR(5,1,10,1100,40);
+</script>
+</body>
+</html>
+
